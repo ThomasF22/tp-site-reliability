@@ -18,6 +18,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """Hash un mot de passe"""
+    # bcrypt a une limite de 72 caractères, on tronque si nécessaire
+    if len(password.encode('utf-8')) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
 def create_session(db: Session, user_id: int) -> str:
