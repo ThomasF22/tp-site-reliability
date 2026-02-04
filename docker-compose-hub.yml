@@ -1,7 +1,9 @@
+# Docker Compose minimal pour utiliser uniquement les images Docker Hub
+# Sauvegarde ce fichier comme docker-compose.yml et lance : docker-compose up -d
+
 services:
   # Base de données MariaDB
   database:
-    build: ./db
     image: thomasf22/forum-database:latest
     container_name: forum-database
     restart: unless-stopped
@@ -19,7 +21,6 @@ services:
 
   # API Backend FastAPI
   backend:
-    build: ./backend
     image: thomasf22/forum-backend:latest
     container_name: forum-backend
     restart: unless-stopped
@@ -36,7 +37,6 @@ services:
 
   # Frontend Vue.js
   frontend:
-    build: ./frontend
     image: thomasf22/forum-frontend:latest
     container_name: forum-frontend
     restart: unless-stopped

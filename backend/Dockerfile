@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier et installer les dépendances Python
@@ -23,6 +24,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le code source
 COPY . .
 
+# Copier le script d'attente et le rendre exécutable
+COPY wait-for-db.sh .
+RUN chmod +x wait-for-db.sh
+
 # Créer un utilisateur non-root
 RUN useradd --create-home --shell /bin/bash app
 RUN chown -R app:app /app
@@ -31,9 +36,5 @@ USER app
 # Exposer le port
 EXPOSE 8000
 
-# Commande de santé
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Commande par défaut
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Commande par défaut avec attente de la DB
+CMD ["./wait-for-db.sh"]
