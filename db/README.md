@@ -48,7 +48,7 @@ docker run -d \
 
 ### Connexion à la base
 ```bash
-docker exec -it forum-database mariadb -u forum_user -p forum_password
+docker exec -it forum-database mariadb -u forum_user -p forum_db
 ```
 
 ## 📊 Données de test
