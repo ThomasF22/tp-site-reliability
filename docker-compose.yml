@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Relation MariaDB/MySQL
+  database:
+    image: mariadb:latest
+    container_name: db_container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: appdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+
+  # Backend FastAPI
+  backend:
+    build: ./backend
+    container_name: api_container
+    restart: always
+    depends_on:
+      - database
+    environment:
+      DATABASE_URL: mysql+pymysql://appuser:apppassword@database:3306/appdb
+    networks:
+      - app-network
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: frontend_container
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
