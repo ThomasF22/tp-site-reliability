@@ -5,12 +5,15 @@ import App from './App.vue'
 // Import Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+// Import Bootstrap Icons
+import 'bootstrap-icons/font/bootstrap-icons.css'
 
 // Import des vues
 import Home from './views/Home.vue'
 import Login from './views/Login.vue'
 import Register from './views/Register.vue'
 import Profile from './views/Profile.vue'
+import PostDetail from './views/PostDetail.vue'
 
 // Configuration du routeur
 const routes = [
@@ -36,6 +39,12 @@ const routes = [
     path: '/profile/:username', 
     name: 'Profile', 
     component: Profile,
+    meta: { requiresAuth: false }
+  },
+  { 
+    path: '/posts/:id', 
+    name: 'PostDetail', 
+    component: PostDetail,
     meta: { requiresAuth: false }
   }
 ]

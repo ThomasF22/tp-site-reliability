@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from typing import Optional, List
 from database import get_db
-from models import User, Post, PostLike, Comment
+from models import User, Post, PostLike, Comment, CommentLike
 from schemas import (
     PostCreate, PostUpdate, PostResponse, Post as PostSchema,
     LikeResponse
@@ -65,13 +65,13 @@ def get_posts(
     
     return result
 
-@router.get("/{post_id}", response_model=PostResponse)
+@router.get("/{post_id}", response_model=PostSchema)
 def get_post(
     post_id: int,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    """Récupérer un post spécifique avec ses commentaires"""
+    """Récupérer un post spécifique"""
     
     post = db.query(Post).join(User).filter(
         Post.id == post_id,
@@ -81,33 +81,11 @@ def get_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
-    # Récupérer les commentaires
-    comments = db.query(Comment).join(User).filter(
-        Comment.post_id == post_id,
-        User.is_active == True
-    ).order_by(Comment.created_at).all()
-    
-    # Enrichir les commentaires
-    enriched_comments = []
-    for comment in comments:
-        like_count = db.query(func.count(CommentLike.id)).filter(
-            CommentLike.comment_id == comment.id
-        ).scalar() or 0
-        
-        is_liked = False
-        if current_user:
-            is_liked = db.query(CommentLike).filter(
-                CommentLike.comment_id == comment.id,
-                CommentLike.user_id == current_user.id
-            ).first() is not None
-        
-        comment_data = Comment.from_orm(comment)
-        comment_data.like_count = like_count
-        comment_data.is_liked = is_liked
-        enriched_comments.append(comment_data)
-    
-    # Enrichir le post
+    # Compter les likes et commentaires
     like_count = db.query(func.count(PostLike.id)).filter(PostLike.post_id == post_id).scalar() or 0
+    comment_count = db.query(func.count(Comment.id)).filter(Comment.post_id == post_id).scalar() or 0
+    
+    # Vérifier si l'utilisateur actuel a liké
     is_liked = False
     if current_user:
         is_liked = db.query(PostLike).filter(
@@ -115,13 +93,31 @@ def get_post(
             PostLike.user_id == current_user.id
         ).first() is not None
     
-    post_data = PostResponse.from_orm(post)
-    post_data.like_count = like_count
-    post_data.comment_count = len(enriched_comments)
-    post_data.is_liked = is_liked
-    post_data.comments = enriched_comments
+    # Enrichir le post avec les métadonnées
+    post_dict = {
+        "id": post.id,
+        "content": post.content,
+        "image_url": post.image_url,
+        "user_id": post.user_id,
+        "created_at": post.created_at,
+        "updated_at": post.updated_at,
+        "author": {
+            "id": post.author.id,
+            "username": post.author.username,
+            "email": post.author.email,
+            "display_name": post.author.display_name,
+            "bio": post.author.bio,
+            "avatar_url": post.author.avatar_url,
+            "is_active": post.author.is_active,
+            "created_at": post.author.created_at,
+            "updated_at": post.author.updated_at
+        },
+        "like_count": like_count,
+        "comment_count": comment_count,
+        "is_liked": is_liked
+    }
     
-    return post_data
+    return post_dict
 
 @router.post("/", response_model=PostSchema)
 def create_post(
